@@ -159,3 +159,20 @@ app.listen(PORT, () => {
   console.log(`   Expansão:  GET  http://localhost:${PORT}/agente/expansao`);
   console.log(`   Relatório: GET  http://localhost:${PORT}/agente/relatorio`);
 });
+
+app.get('/debug-tiny', async (req, res) => {
+  const https = require('https');
+  const TOKEN = process.env.TINY_TOKEN;
+  const options = {
+    hostname: 'api.tiny.com.br',
+    path: `/api2/pedidos.pesquisa.php/?token=${TOKEN}&formato=json&dataInicial=01/05/2026&dataFinal=10/05/2026&pagina=1`,
+    method: 'GET',
+  };
+  let data = '';
+  const req2 = https.request(options, (r) => {
+    r.on('data', chunk => data += chunk);
+    r.on('end', () => res.send(data));
+  });
+  req2.on('error', e => res.send('ERRO: ' + e.message));
+  req2.end();
+});
