@@ -7,7 +7,7 @@ function tinyGet(endpoint, params) {
     const qs = new URLSearchParams({ token: TOKEN, formato: 'json', ...params }).toString();
     const options = {
       hostname: 'api.tiny.com.br',
-      path: `/api2/${endpoint}/?${qs}`,
+      path: `/api2/${endpoint}.php/?${qs}`,
       method: 'GET',
     };
     const req = https.request(options, (res) => {
