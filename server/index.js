@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const cron = require('node-cron');
 
-const { buscarPedidos, analisarPedidos } = require('./tiny');
+const { buscarPedidos, analisarPedidos, enriquecerComItens } = require('./tiny');
 const { perguntarAgente, gerarRelatorio, analisarExpansao, limparHistorico } = require('./agent');
 const { buscarDadosCidade, cruzarComVendas } = require('./geo');
 const { alertaChurn, relatorioDiario } = require('./notifications');
@@ -29,6 +29,7 @@ app.get('/pedidos', async (req, res) => {
   try {
     const dias = parseInt(req.query.dias || '30');
     const pedidos = await buscarPedidos(dias);
+    await enriquecerComItens(pedidos);
     res.json({ ok: true, pedidos });
   } catch (e) {
     res.status(500).json({ ok: false, msg: e.message });

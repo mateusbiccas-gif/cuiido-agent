@@ -128,12 +128,25 @@ function analisarPedidos(pedidos) {
 }
 
 function canalDe(p) {
-  const tags = (p.tags || '').toLowerCase();
-  const nome = (p.cliente || p.nome_fantasia || '').toLowerCase();
-  if (tags.includes('ecommerce') || tags.includes('e-commerce') || nome.includes('shopify') || nome.includes('mercado livre') || nome.includes('amazon')) return 'ecommerce';
-  if (tags.includes('distribuidor') || nome.includes('distribuidor') || nome.includes('atacado')) return 'distribuidor';
-  if (tags.includes('barbearia') || nome.includes('barbearia') || nome.includes('barber')) return 'barbearia';
+  if (p.numero_ecommerce) return 'ecommerce';
+  const nome = (p.cliente || p.nome_fantasia || p.nome_cliente || '').toLowerCase();
+  const ehBarbearia = /\b(barbearia|barber|cabeleireiro|cabelereiro)\b/.test(nome)
+    || /\b(ltda|me|eireli)\b/.test(nome);
+  if (ehBarbearia) return 'barbearia';
+  if (parseFloat(p.valor || 0) > 5000) return 'distribuidor';
   return 'outros';
 }
 
-module.exports = { buscarPedidos, buscarPedidoDetalhe, buscarClientes, analisarPedidos };
+async function enriquecerComItens(pedidos) {
+  const top20 = [...pedidos]
+    .sort((a, b) => parseFloat(b.valor || 0) - parseFloat(a.valor || 0))
+    .slice(0, 20);
+  await Promise.all(top20.map(async (p) => {
+    if (!p.id) return;
+    const detalhe = await buscarPedidoDetalhe(p.id);
+    if (detalhe?.itens) p.itens = detalhe.itens;
+  }));
+  return pedidos;
+}
+
+module.exports = { buscarPedidos, buscarPedidoDetalhe, buscarClientes, analisarPedidos, enriquecerComItens };

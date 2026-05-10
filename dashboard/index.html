@@ -304,11 +304,12 @@ async function pingServidor() {
 }
 
 function canalDe(p) {
-  const tags = (p.tags || '').toLowerCase();
+  if (p.numero_ecommerce) return 'ecommerce';
   const nome = (p.cliente || p.nome_fantasia || '').toLowerCase();
-  if (tags.includes('ecommerce') || tags.includes('e-commerce') || nome.includes('shopify') || nome.includes('mercado livre')) return 'ecommerce';
-  if (tags.includes('distribuidor') || nome.includes('distribuidor') || nome.includes('atacado')) return 'distribuidor';
-  if (tags.includes('barbearia') || nome.includes('barbearia') || nome.includes('barber')) return 'barbearia';
+  const ehBarbearia = /\b(barbearia|barber|cabeleireiro|cabelereiro)\b/.test(nome)
+    || /\b(ltda|me|eireli)\b/.test(nome);
+  if (ehBarbearia) return 'barbearia';
+  if (parseFloat(p.valor || 0) > 5000) return 'distribuidor';
   return 'outros';
 }
 
@@ -335,7 +336,7 @@ function calcular(pedidos) {
     if (!vendedores[vendedor]) vendedores[vendedor] = { total: 0, pedidos: 0 };
     vendedores[vendedor].total += v; vendedores[vendedor].pedidos++;
 
-    const nome = p.cliente || 'Desconhecido';
+    const nome = p.cliente || p.nome_fantasia || p.nome_cliente || 'Desconhecido';
     if (!clientes[nome]) clientes[nome] = { total: 0, pedidos: 0, canal: c, ultima: null };
     clientes[nome].total += v; clientes[nome].pedidos++;
     const dt = p.data_pedido ? new Date(p.data_pedido.split('/').reverse().join('-')) : null;
