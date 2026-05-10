@@ -162,17 +162,31 @@ app.listen(PORT, () => {
 
 app.get('/debug-tiny', async (req, res) => {
   const https = require('https');
-  const TOKEN = process.env.TINY_TOKEN;
+  const RAW = process.env.TINY_TOKEN || '';
+  const TOKEN = RAW.trim();
+  const tokenInfo = {
+    definida: !!RAW,
+    comprimento_raw: RAW.length,
+    comprimento_trim: TOKEN.length,
+    tem_espaco_inicio: RAW !== RAW.trimStart(),
+    tem_espaco_fim: RAW !== RAW.trimEnd(),
+    primeiros_chars: TOKEN.slice(0, 6) + '...',
+  };
+
   const options = {
     hostname: 'api.tiny.com.br',
-    path: `/api2/pedidos.pesquisa.php/?token=${TOKEN}&formato=json&dataInicial=01/05/2026&dataFinal=10/05/2026&pagina=1`,
+    path: `/api2/pedidos.pesquisa.php?token=${TOKEN}&formato=json&dataInicial=01%2F05%2F2026&dataFinal=10%2F05%2F2026&pagina=1`,
     method: 'GET',
   };
   let data = '';
   const req2 = https.request(options, (r) => {
     r.on('data', chunk => data += chunk);
-    r.on('end', () => res.send(data));
+    r.on('end', () => {
+      let parsed;
+      try { parsed = JSON.parse(data); } catch { parsed = data; }
+      res.json({ tokenInfo, resposta: parsed });
+    });
   });
-  req2.on('error', e => res.send('ERRO: ' + e.message));
+  req2.on('error', e => res.json({ tokenInfo, erro: e.message }));
   req2.end();
 });

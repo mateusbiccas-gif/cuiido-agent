@@ -1,6 +1,6 @@
 const https = require('https');
 
-const TOKEN = process.env.TINY_TOKEN;
+const TOKEN = (process.env.TINY_TOKEN || '').trim();
 
 function tinyGet(endpoint, params) {
   return new Promise((resolve, reject) => {
