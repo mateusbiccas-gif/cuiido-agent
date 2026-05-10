@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuiido — Agente Comercial</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F2F1EE; --surface: #fff; --surface2: #ECEAE5;
+    --border: rgba(0,0,0,0.08); --text: #18181A; --text2: #5C5B57; --text3: #9C9A94;
+    --green: #1C9E73; --green-light: #E0F5EE; --blue: #2E7BD4;
+    --amber: #C27B18; --purple: #5147B0; --red: #D94545; --red-light: #FAEBEB;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 10; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo {
+    width: 32px; height: 32px; background: var(--green); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 13px;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header h1 span { color: var(--text3); font-weight: 400; font-size: 13px; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, button {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); cursor: pointer;
+  }
+  button.primary { background: var(--green); color: white; border-color: var(--green); font-weight: 500; }
+  button.primary:hover { background: #178060; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-green { background: var(--green); }
+  .dot-red { background: var(--red); }
+  .dot-gray { background: #ccc; }
+  .server-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+
+  .tabs { display: flex; gap: 2px; padding: 16px 28px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab {
+    padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+    border-bottom: 2px solid transparent; color: var(--text2); transition: all 0.15s;
+    background: none; border-radius: 0; border-left: none; border-right: none; border-top: none;
+  }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .main { padding: 24px 28px; max-width: 1240px; margin: 0 auto; }
+  .section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); margin-bottom: 12px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .metric { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 16px 18px; }
+  .metric-accent { border-top: 2px solid var(--green); }
+  .metric-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; font-weight: 500; }
+  .metric-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 20px 22px; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .card-subtitle { font-size: 11px; color: var(--text3); margin-bottom: 16px; }
+  .chart-wrap { position: relative; width: 100%; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF8; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 5px; text-transform: uppercase; }
+  .tag-eco { background: #E0F5EE; color: #0D6B53; }
+  .tag-dist { background: #E3EFF9; color: #1758A0; }
+  .tag-barb { background: #FAF0DC; color: #7F4B0B; }
+  .tag-out { background: #F0EFE9; color: #5E5C56; }
+  .bar-wrap { background: var(--surface2); border-radius: 3px; height: 5px; min-width: 60px; }
+  .bar-fill { height: 5px; border-radius: 3px; background: var(--green); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .cliente-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .cliente-row:last-child { border-bottom: none; }
+  .score-badge { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  #loading { display: flex; align-items: center; gap: 14px; padding: 60px 0; color: var(--text2); flex-direction: column; text-align: center; }
+  .spinner { width: 28px; height: 28px; border: 2.5px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #error-box { background: var(--red-light); color: #8B2020; border: 1px solid #EDACAC; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: none; font-size: 13px; }
+  .empty { font-size: 13px; color: var(--text3); padding: 12px 0; }
+  .topo-info { font-size: 12px; color: var(--text3); margin-bottom: 22px; }
+
+  /* Chat do agente */
+  .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 220px); min-height: 400px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 80%; }
+  .msg-user { align-self: flex-end; }
+  .msg-agent { align-self: flex-start; }
+  .msg-bubble {
+    padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .msg-user .msg-bubble { background: var(--green); color: white; border-radius: 12px 12px 2px 12px; }
+  .msg-agent .msg-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 12px 12px 12px 2px; }
+  .msg-time { font-size: 10px; color: var(--text3); margin-top: 4px; text-align: right; }
+  .chat-input-wrap {
+    padding: 16px 20px; background: var(--surface);
+    border-top: 1px solid var(--border); display: flex; gap: 10px;
+  }
+  .chat-input {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); outline: none; resize: none;
+  }
+  .chat-input:focus { border-color: var(--green); }
+  .chat-suggestions { padding: 0 20px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .suggestion {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    background: var(--green-light); color: var(--green);
+    border: 1px solid rgba(28,158,115,0.2); cursor: pointer;
+    font-weight: 500;
+  }
+  .suggestion:hover { background: var(--green); color: white; }
+  .typing { display: flex; gap: 4px; padding: 12px 16px; }
+  .typing span { width: 6px; height: 6px; background: var(--text3); border-radius: 50%; animation: bounce 1s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+
+  @media (max-width: 720px) {
+    .grid2 { grid-template-columns: 1fr; }
+    header { flex-direction: column; align-items: flex-start; }
+    .main { padding: 16px; }
+    .tabs { padding: 12px 16px 0; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">Cu</div>
+    <h1>Cuiido <span>/ agente comercial</span></h1>
+  </div>
+  <div class="controls">
+    <div class="server-status">
+      <div class="dot dot-gray" id="status-dot"></div>
+      <span id="status-txt">conectando...</span>
+    </div>
+    <select id="sel-periodo">
+      <option value="30">Últimos 30 dias</option>
+      <option value="60">Últimos 60 dias</option>
+      <option value="90">Últimos 90 dias</option>
+      <option value="180">Últimos 6 meses</option>
+    </select>
+    <button class="primary" onclick="carregar()">↻ Atualizar</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('painel')">📊 Painel</button>
+  <button class="tab" onclick="showTab('vendedor')">👤 Por Vendedor</button>
+  <button class="tab" onclick="showTab('geo')">📍 Por Cidade</button>
+  <button class="tab" onclick="showTab('agente')">🤖 Agente IA</button>
+</div>
+
+<!-- PAINEL -->
+<div id="tab-painel" class="tab-content active">
+  <div class="main">
+    <div id="error-box"></div>
+    <div id="loading"><div class="spinner"></div><span style="font-size:13px;color:var(--text3)">Buscando dados do Tiny...</span></div>
+    <div id="conteudo" style="display:none">
+      <p class="topo-info" id="topo-info"></p>
+      <p class="section-label">Resumo do período</p>
+      <div class="metric-grid" id="metrics"></div>
+      <div class="grid2">
+        <div class="card">
+          <p class="card-title">Faturamento por canal</p>
+          <div class="legend" id="legend-canal"></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-canal"></canvas></div>
+        </div>
+        <div class="card">
+          <p class="card-title">Clientes: novos vs recorrentes</p>
+          <div class="legend" id="legend-cli"></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-cli"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">Produtos mais vendidos</p>
+        <table><thead><tr><th>#</th><th>Produto</th><th>Canal</th><th>Qtd</th><th>Receita</th><th>Participação</th></tr></thead>
+        <tbody id="tbl-produtos"></tbody></table>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <p class="card-title">Barbearias — ranking</p>
+          <div id="lista-barb"></div>
+        </div>
+        <div class="card">
+          <p class="card-title">⚠ Clientes em risco de churn</p>
+          <p class="card-subtitle">Sem comprar há mais de 45 dias</p>
+          <div id="lista-churn"></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">Evolução semanal</p>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-evolucao"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POR VENDEDOR -->
+<div id="tab-vendedor" class="tab-content">
+  <div class="main">
+    <div class="card">
+      <p class="card-title">Performance por vendedor</p>
+      <p class="card-subtitle">Faturamento e pedidos no período selecionado</p>
+      <table>
+        <thead><tr><th>#</th><th>Vendedor</th><th>Pedidos</th><th>Faturamento</th><th>Ticket Médio</th><th>Participação</th></tr></thead>
+        <tbody id="tbl-vendedores"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- POR CIDADE -->
+<div id="tab-geo" class="tab-content">
+  <div class="main">
+    <div class="grid2">
+      <div class="card">
+        <p class="card-title">Top cidades</p>
+        <p class="card-subtitle">Faturamento por cidade no período</p>
+        <table>
+          <thead><tr><th>#</th><th>Cidade</th><th>Estado</th><th>Pedidos</th><th>Faturamento</th></tr></thead>
+          <tbody id="tbl-cidades"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <p class="card-title">Top estados</p>
+        <div class="chart-wrap" style="height:300px"><canvas id="chart-estados"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENTE IA -->
+<div id="tab-agente" class="tab-content">
+  <div class="chat-wrap">
+    <div class="chat-suggestions" id="suggestions">
+      <span class="suggestion" onclick="enviarSugestao(this)">Qual o faturamento desta semana?</span>
+      <span class="suggestion" onclick="enviarSugestao(this)">Quais clientes estão em risco de churn?</span>
+      <span class="suggestion" onclick="enviarSugestao(this)">Qual vendedor está performando melhor?</span>
+      <span class="suggestion" onclick="enviarSugestao(this)">Quais cidades têm maior potencial?</span>
+      <span class="suggestion" onclick="enviarSugestao(this)">Gera um resumo do mês para o time</span>
+      <span class="suggestion" onclick="enviarSugestao(this)">Que ações comerciais devo priorizar?</span>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg msg-agent">
+        <div class="msg-bubble">Olá! Sou o agente comercial da Cuiido. Posso analisar suas vendas, identificar oportunidades e sugerir ações. O que você quer saber?</div>
+      </div>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea class="chat-input" id="chat-input" rows="1" placeholder="Pergunte sobre vendas, clientes, cidades..." onkeydown="chatKeyDown(event)"></textarea>
+      <button class="primary" onclick="enviarPergunta()" id="btn-enviar">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin === 'null' || window.location.origin === 'file://' 
+  ? 'http://localhost:3001' 
+  : window.location.origin;
+
+let chartCanal=null, chartCli=null, chartEv=null, chartEstados=null;
+let analiseAtual = null;
+
+function fmt(v) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v || 0);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+async function pingServidor() {
+  try {
+    const r = await fetch(`${API}/ping`);
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('status-dot').className = 'dot dot-green';
+      document.getElementById('status-txt').textContent = 'conectado';
+      return true;
+    }
+  } catch {}
+  document.getElementById('status-dot').className = 'dot dot-red';
+  document.getElementById('status-txt').textContent = 'offline';
+  return false;
+}
+
+function canalDe(p) {
+  const tags = (p.tags || '').toLowerCase();
+  const nome = (p.cliente || p.nome_fantasia || '').toLowerCase();
+  if (tags.includes('ecommerce') || tags.includes('e-commerce') || nome.includes('shopify') || nome.includes('mercado livre')) return 'ecommerce';
+  if (tags.includes('distribuidor') || nome.includes('distribuidor') || nome.includes('atacado')) return 'distribuidor';
+  if (tags.includes('barbearia') || nome.includes('barbearia') || nome.includes('barber')) return 'barbearia';
+  return 'outros';
+}
+
+function calcular(pedidos) {
+  const hoje = new Date();
+  let fat = 0;
+  const canais = { ecommerce: 0, distribuidor: 0, barbearia: 0, outros: 0 };
+  const clientes = {}, produtos = {}, semanas = {}, vendedores = {}, estados = {}, cidades = {};
+
+  pedidos.forEach(p => {
+    const v = parseFloat(p.valor || 0);
+    fat += v;
+    const c = canalDe(p);
+    canais[c] = (canais[c] || 0) + v;
+
+    const estado = p.uf || 'N/A';
+    const cidade = p.cidade || 'Desconhecida';
+    estados[estado] = (estados[estado] || 0) + v;
+    const cidKey = `${cidade}|${estado}`;
+    if (!cidades[cidKey]) cidades[cidKey] = { nome: cidade, estado, total: 0, pedidos: 0 };
+    cidades[cidKey].total += v; cidades[cidKey].pedidos++;
+
+    const vendedor = p.vendedor || 'Sem vendedor';
+    if (!vendedores[vendedor]) vendedores[vendedor] = { total: 0, pedidos: 0 };
+    vendedores[vendedor].total += v; vendedores[vendedor].pedidos++;
+
+    const nome = p.cliente || 'Desconhecido';
+    if (!clientes[nome]) clientes[nome] = { total: 0, pedidos: 0, canal: c, ultima: null };
+    clientes[nome].total += v; clientes[nome].pedidos++;
+    const dt = p.data_pedido ? new Date(p.data_pedido.split('/').reverse().join('-')) : null;
+    if (dt && (!clientes[nome].ultima || dt > clientes[nome].ultima)) clientes[nome].ultima = dt;
+    if (dt) {
+      const sem = `${dt.getFullYear()}-W${String(Math.ceil((dt.getDate() + new Date(dt.getFullYear(), dt.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+      semanas[sem] = (semanas[sem] || 0) + v;
+    }
+
+    const itens = p.itens?.item ? (Array.isArray(p.itens.item) ? p.itens.item : [p.itens.item]) : [];
+    itens.forEach(it => {
+      const k = it.descricao || 'Produto';
+      if (!produtos[k]) produtos[k] = { qtd: 0, receita: 0, canal: c };
+      produtos[k].qtd += parseInt(it.quantidade || 1);
+      produtos[k].receita += parseFloat(it.valor_unitario || 0) * parseInt(it.quantidade || 1);
+    });
+  });
+
+  const novos = Object.values(clientes).filter(c => c.pedidos === 1).length;
+  const rec = Object.values(clientes).filter(c => c.pedidos > 1).length;
+  const ticket = pedidos.length ? fat / pedidos.length : 0;
+  const churn = Object.entries(clientes).filter(([_,c]) => c.ultima && (hoje-c.ultima)/86400000>45 && c.pedidos>1).map(([n,c])=>({nome:n,...c})).sort((a,b)=>b.total-a.total).slice(0,8);
+  const barb = Object.entries(clientes).filter(([_,c])=>c.canal==='barbearia').map(([n,c])=>({nome:n,...c})).sort((a,b)=>b.total-a.total).slice(0,8);
+  const prods = Object.entries(produtos).map(([n,d])=>({nome:n,...d})).sort((a,b)=>b.receita-a.receita).slice(0,10);
+  const evol = Object.entries(semanas).sort((a,b)=>a[0].localeCompare(b[0]));
+  const topVendedores = Object.entries(vendedores).sort((a,b)=>b[1].total-a[1].total);
+  const topCidades = Object.values(cidades).sort((a,b)=>b.total-a.total).slice(0,20);
+  const topEstados = Object.entries(estados).sort((a,b)=>b[1]-a[1]);
+
+  return { fat, ticket, canais, novos, rec, churn, barb, prods, evol, total: pedidos.length, topVendedores, topCidades, topEstados };
+}
+
+function renderMetrics(m) {
+  const items = [
+    { label: 'Faturamento total', value: fmt(m.fat), sub: `${m.total} pedidos`, accent: true },
+    { label: 'Ticket médio', value: fmt(m.ticket), sub: 'por pedido' },
+    { label: 'Clientes novos', value: m.novos, sub: 'primeira compra' },
+    { label: 'Recorrentes', value: m.rec, sub: 'mais de 1 pedido' },
+    { label: 'Risco de churn', value: m.churn.length, sub: '+45 dias sem comprar' },
+    { label: 'E-commerce', value: fmt(m.canais.ecommerce), sub: '' },
+    { label: 'Distribuidor', value: fmt(m.canais.distribuidor), sub: '' },
+    { label: 'Barbearia direta', value: fmt(m.canais.barbearia), sub: '' },
+  ];
+  document.getElementById('metrics').innerHTML = items.map(x =>
+    `<div class="metric${x.accent?' metric-accent':''}"><div class="metric-label">${x.label}</div><div class="metric-value">${x.value}</div><div class="metric-sub">${x.sub}</div></div>`
+  ).join('');
+}
+
+function renderVendedores(m) {
+  const total = m.topVendedores.reduce((a,[,v])=>a+v.total,0)||1;
+  document.getElementById('tbl-vendedores').innerHTML = m.topVendedores.map(([nome,v],i) => {
+    const pct = (v.total/total*100).toFixed(1);
+    const ticket = v.pedidos ? v.total/v.pedidos : 0;
+    return `<tr>
+      <td style="color:var(--text3);font-weight:600">${i+1}</td>
+      <td style="font-weight:500">${nome}</td>
+      <td>${v.pedidos}</td>
+      <td>${fmt(v.total)}</td>
+      <td>${fmt(ticket)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap" style="flex:1"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--text3)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty">Nenhum dado de vendedor. Cadastre vendedores nos pedidos do Tiny.</td></tr>';
+}
+
+function renderCidades(m) {
+  document.getElementById('tbl-cidades').innerHTML = m.topCidades.map((c,i) =>
+    `<tr><td style="color:var(--text3);font-weight:600">${i+1}</td><td style="font-weight:500">${c.nome}</td><td>${c.estado}</td><td>${c.pedidos}</td><td>${fmt(c.total)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" class="empty">Nenhum dado de cidade disponível.</td></tr>';
+
+  if (chartEstados) chartEstados.destroy();
+  const top8 = m.topEstados.slice(0,8);
+  chartEstados = new Chart(document.getElementById('chart-estados'), {
+    type: 'bar',
+    data: {
+      labels: top8.map(([e])=>e),
+      datasets: [{ data: top8.map(([,v])=>v), backgroundColor: '#1C9E73', borderRadius: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v=>'R$'+(v/1000).toFixed(0)+'k', font:{size:11} }, grid:{color:'rgba(0,0,0,0.04)'} }, x:{ticks:{font:{size:11}},grid:{display:false}} } }
+  });
+}
+
+function renderChartCanal(m) {
+  if (chartCanal) chartCanal.destroy();
+  const cores = ['#1C9E73','#2E7BD4','#C27B18','#888780'];
+  const rotulos = ['E-commerce','Distribuidor','Barbearia','Outros'];
+  const vals = [m.canais.ecommerce,m.canais.distribuidor,m.canais.barbearia,m.canais.outros];
+  const total = vals.reduce((a,b)=>a+b,0)||1;
+  document.getElementById('legend-canal').innerHTML = rotulos.map((r,i)=>
+    `<span class="legend-item"><span class="legend-dot" style="background:${cores[i]}"></span>${r} ${(vals[i]/total*100).toFixed(0)}%</span>`).join('');
+  chartCanal = new Chart(document.getElementById('chart-canal'),{type:'bar',data:{labels:rotulos,datasets:[{data:vals,backgroundColor:cores,borderRadius:7,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}});
+}
+
+function renderChartCli(m) {
+  if (chartCli) chartCli.destroy();
+  const cores = ['#1C9E73','#5147B0'];
+  document.getElementById('legend-cli').innerHTML = [['Novos',m.novos],['Recorrentes',m.rec]].map(([r,v],i)=>
+    `<span class="legend-item"><span class="legend-dot" style="background:${cores[i]}"></span>${r}: ${v}</span>`).join('');
+  chartCli = new Chart(document.getElementById('chart-cli'),{type:'doughnut',data:{labels:['Novos','Recorrentes'],datasets:[{data:[m.novos,m.rec],backgroundColor:cores,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}});
+}
+
+function renderChartEvolucao(m) {
+  if (chartEv) chartEv.destroy();
+  if (!m.evol.length) return;
+  chartEv = new Chart(document.getElementById('chart-evolucao'),{type:'line',data:{labels:m.evol.map(([s])=>s.replace('-W',' Sem ')),datasets:[{label:'Faturamento',data:m.evol.map(([,v])=>v),borderColor:'#1C9E73',backgroundColor:'rgba(28,158,115,0.07)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#1C9E73',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}});
+}
+
+function renderProdutos(m) {
+  const total = m.prods.reduce((a,b)=>a+b.receita,0)||1;
+  const tagCls = {ecommerce:'tag-eco',distribuidor:'tag-dist',barbearia:'tag-barb',outros:'tag-out'};
+  document.getElementById('tbl-produtos').innerHTML = m.prods.length
+    ? m.prods.map((p,i)=>{const pct=(p.receita/total*100).toFixed(1);return`<tr><td style="color:var(--text3);font-weight:600">${i+1}</td><td style="font-weight:500">${p.nome}</td><td><span class="tag ${tagCls[p.canal]||'tag-out'}">${p.canal}</span></td><td>${p.qtd}</td><td>${fmt(p.receita)}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--text3)">${pct}%</span></div></td></tr>`;}).join('')
+    : '<tr><td colspan="6" class="empty">Nenhum item detalhado encontrado.</td></tr>';
+}
+
+function renderBarbearias(m) {
+  const max = m.barb[0]?.total||1;
+  document.getElementById('lista-barb').innerHTML = m.barb.length
+    ? m.barb.map(b=>{const ini=b.nome.split(' ').slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const score=Math.min(100,Math.round(b.total/max*100));const[bg,fg]=score>70?['#E0F5EE','#0D6B53']:score>40?['#FAF0DC','#7F4B0B']:['#FAEBEB','#8B2020'];const dias=b.ultima?Math.round((new Date()-b.ultima)/86400000):'?';return`<div class="cliente-row"><div class="avatar" style="background:${bg};color:${fg}">${ini}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.nome}</div><div style="font-size:12px;color:var(--text2)">${b.pedidos} pedidos · ${fmt(b.total)} · ${dias}d atrás</div></div><div class="score-badge" style="background:${bg};color:${fg}">${score}</div></div>`;}).join('')
+    : '<p class="empty">Nenhuma barbearia identificada.</p>';
+}
+
+function renderChurn(m) {
+  const tagCls = {ecommerce:'tag-eco',distribuidor:'tag-dist',barbearia:'tag-barb',outros:'tag-out'};
+  document.getElementById('lista-churn').innerHTML = m.churn.length
+    ? m.churn.map(c=>{const ini=c.nome.split(' ').slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const dias=c.ultima?Math.round((new Date()-c.ultima)/86400000):'?';return`<div class="cliente-row"><div class="avatar" style="background:#FAEBEB;color:#8B2020">${ini}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.nome}</div><div style="font-size:12px;color:var(--text2)"><span class="tag ${tagCls[c.canal]||'tag-out'}">${c.canal}</span> · ${dias} dias sem comprar</div></div><div style="font-size:13px;font-weight:700;color:var(--red);flex-shrink:0">${fmt(c.total)}</div></div>`;}).join('')
+    : '<p class="empty" style="color:var(--green)">Nenhum cliente em risco ✓</p>';
+}
+
+async function carregar() {
+  const dias = parseInt(document.getElementById('sel-periodo').value);
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('conteudo').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+
+  const ok = await pingServidor();
+  if (!ok) {
+    document.getElementById('loading').style.display = 'none';
+    const eb = document.getElementById('error-box');
+    eb.innerHTML = '<strong>Servidor offline.</strong> Certifique-se de que o servidor está rodando.';
+    eb.style.display = 'block';
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API}/pedidos?dias=${dias}`);
+    const d = await r.json();
+    if (!d.ok || !d.pedidos?.length) throw new Error('Nenhum pedido encontrado no período.');
+    const m = calcular(d.pedidos);
+    analiseAtual = m;
+
+    const ini = new Date(Date.now() - dias * 86400000);
+    document.getElementById('topo-info').textContent =
+      `${d.pedidos.length} pedidos de ${ini.toLocaleDateString('pt-BR')} até hoje · atualizado agora`;
+
+    renderMetrics(m);
+    renderChartCanal(m);
+    renderChartCli(m);
+    renderChartEvolucao(m);
+    renderProdutos(m);
+    renderBarbearias(m);
+    renderChurn(m);
+    renderVendedores(m);
+    renderCidades(m);
+
+    document.getElementById('conteudo').style.display = 'block';
+  } catch(e) {
+    const eb = document.getElementById('error-box');
+    eb.textContent = '⚠ ' + e.message;
+    eb.style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ── Chat do agente ───────────────────────────────────────
+function addMsg(texto, tipo) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg msg-${tipo}`;
+  const hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `<div class="msg-bubble">${texto}</div><div class="msg-time">${hora}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-agent';
+  div.id = 'typing-indicator';
+  div.innerHTML = '<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+async function enviarPergunta() {
+  const input = document.getElementById('chat-input');
+  const pergunta = input.value.trim();
+  if (!pergunta) return;
+
+  input.value = '';
+  document.getElementById('btn-enviar').disabled = true;
+  document.getElementById('suggestions').style.display = 'none';
+  addMsg(pergunta, 'user');
+  addTyping();
+
+  try {
+    const dias = parseInt(document.getElementById('sel-periodo').value);
+    const r = await fetch(`${API}/agente/perguntar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pergunta, dias })
+    });
+    const d = await r.json();
+    removeTyping();
+    addMsg(d.resposta || d.msg || 'Erro ao processar.', 'agent');
+  } catch(e) {
+    removeTyping();
+    addMsg('Erro ao conectar com o agente: ' + e.message, 'agent');
+  }
+
+  document.getElementById('btn-enviar').disabled = false;
+}
+
+function enviarSugestao(el) {
+  document.getElementById('chat-input').value = el.textContent;
+  enviarPergunta();
+}
+
+function chatKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviarPergunta();
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>
